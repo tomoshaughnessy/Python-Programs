@@ -22,35 +22,38 @@ class MeteorGUI:
 
         # create frames for widgets....................see page 549
         # set up a frame for each widget to position them correctly
-        self.earth_y = 400
-        self.earth_x = 1000
+        self.earth_y = 400                                                                                              # earth y position
+        self.earth_x = 1000                                                                                             # earth x position
 
         self.top_frame = tkinter.Frame(self.main_window)
         self.heading_frame = tkinter.Frame(self.main_window)  # has the title
-        self.canvas_h = 800
-        self.canvas_w = 2000
-        self.earth_canvas = tkinter.Canvas(self.main_window, width=self.canvas_w, height=self.canvas_h, bg="black")
-        self.explosion_image = Image.open('explosion.png')
-        self.explosion_photo_image = ImageTk.PhotoImage(self.explosion_image)
+        self.canvas_h = 800                                                                                             # canvas height
+        self.canvas_w = 2000                                                                                            # canvas width
+        self.earth_canvas = tkinter.Canvas(self.main_window, width=self.canvas_w, height=self.canvas_h, bg="black")     # canvas for earth
+        self.explosion_image = Image.open('explosion.png')                                                              # open file
+        self.explosion_photo_image = ImageTk.PhotoImage(self.explosion_image)                                           # convert to PhotoImage for editing
         self.earth_image = Image.open('earth.png')
         self.earth_photo_image = ImageTk.PhotoImage(self.earth_image)
         self.meteor_image = Image.open('meteor.png')
         self.meteor_photo_image = ImageTk.PhotoImage(self.meteor_image)
-        self.meteor_x = 0
-        self.meteor_y = 0
-        self.meteor_dx = 1
-        self.meteor_dy = 1
-        self.meteor_deltaerr = self.earth_y/self.earth_x
-        self.meteor_err = self.meteor_deltaerr - 0.5
-        self.meteor_drr = 1
-        self.meteor_h = 250
-        self.meteor_w = 250
-        self.rocket_x = 1050
-        self.rocket_y = 400
-        self.rocket_h = 10
-        self.rocket_w = 20
-        self.rocket_dy = 5
-        self.rocket_dx = 5
+        self.meteor_x = 0                                                                                               # meteor x position
+        self.meteor_y = 0                                                                                               # meteor y position
+        self.meteor_dx = 1                                                                                              # meteor dx per frame
+        self.meteor_dy = 1                                                                                              # meteor dy per frame
+        self.meteor_deltaerr = self.earth_y/self.earth_x                                                                # slope to earth
+        self.meteor_err = self.meteor_deltaerr - 0.5                                                                    # when this is larger than 1, increment y
+        self.meteor_derr = 1                                                                                            # and subtract 1
+        self.meteor_h = 250                                                                                             # meteor height
+        self.meteor_w = 250                                                                                             # meteor width
+        self.rocket_x = 1050                                                                                            # rocket x position
+        self.rocket_y = 400                                                                                             # rocket y position
+        self.rocket_h = 10                                                                                              # rocket height
+        self.rocket_w = 20                                                                                              # rocket width
+        self.rocket_dh = 2                                                                                              # rocket dh per frame
+        self.rocket_dw = 2                                                                                              # rocket dw per frame
+        self.rocket_dy = 5                                                                                              # rocket dy per frame
+        self.rocket_dx = 5                                                                                              # rocket dx per frame
+        self.rocket_e = 20                                                                                              # rocket epsilon (minimum distance from meteor)
 
         # self.blank_frame1 = tkinter.Frame(self.main_window)
         self.diameter_frame = tkinter.Frame(self.main_window)
@@ -77,12 +80,10 @@ class MeteorGUI:
         self.diameter_entry = tkinter.Entry(self.diameter_frame, width=20)
         self.diameter_entry.insert(0, 3)
 
-        self.distance_label = tkinter.Label(self.distance_frame, \
-                                            text='     Enter the meteor distance from Earth in miles:  ',
-                                            font=("Helvetica", 10))
+        self.distance_label = tkinter.Label(self.distance_frame)
 
-        self.distance_entry = tkinter.Entry(self.distance_frame, width=20)
-        self.distance_entry.insert(0, 300)
+        #self.distance_entry = tkinter.Entry(self.distance_frame, width=20)
+        #self.distance_entry.insert(0, 300)
 
         # pack (position and order) the top frame's widgets
         # self.blank_label1.pack()
@@ -94,7 +95,7 @@ class MeteorGUI:
         # self.blank_label3.pack()
 
         self.distance_label.pack(side='left')
-        self.distance_entry.pack(side='left')
+        #self.distance_entry.pack(side='left')
 
         # create the button widgets and label for the bottom frame
         # self.blank_label4 = tkinter.Label(self.bottom_frame, text=' ')
@@ -103,8 +104,8 @@ class MeteorGUI:
         # self.runSim_button = tkinter.Button(self.bottom_frame, \
         # text='Run Simulation', command=self.processData)
         # self.blank_label5 = tkinter.Label(self.bottom_frame, text=' ')
-        self.quit_button = tkinter.Button(self.bottom_frame, text='Quit', \
-                                          command=self.main_window.destroy)
+        #self.quit_button = tkinter.Button(self.bottom_frame, text='Quit', \                                            # quit button
+        #                                  command=self.main_window.destroy)
         # self.blank_label6 = tkinter.Label(self.bottom_frame, text=' ')
 
 
@@ -115,7 +116,7 @@ class MeteorGUI:
         # self.blank_label4.pack()
         self.runSim_button.pack()
         # self.blank_label5.pack()
-        self.quit_button.pack()
+        #self.quit_button.pack()
         # self.blank_label6.pack()
 
         # pack the frames
@@ -139,27 +140,39 @@ class MeteorGUI:
             self.draw_one_meteor_frame()
             self.distance = self.distance - (self.meteorSpeed / 60/10)
             # based on the earth image, there are 20 px per mile
-            # self.distance = 20 * (int(math.sqrt(pow(self.earth_x - self.meteor_x, 2) + pow(self.earth_y-self.meteor_y,2))))
-            self.distance_label.config(text='Distance is now {:d}'.format(int(self.distance)))
-            if (int(self.distance) >= 1200 and int(self.distance) <= 1400):
-                self.runSim_button.config(background='green', command=self.animate_rocket_success)
+            # self.distance = 20 * (int(math.sqrt(pow(self.earth_x - self.meteor_x, 2) + pow(self.earth_y-self.meteor_y,2))))           # it is not reasonable to calculate distance based on meteor position
+            self.distance_label.config(text='Distance is now {:d}'.format(int(self.distance)))                                          # because the meteor shrinks creating an imaginary z-axis
+                                                                                                                                        # it could be possible using law of cosines and width of meteor
+
+
+            if (int(self.distance) >= 1200 and int(self.distance) <= 1400):                                             # if the distance is within this given range
+                self.runSim_button.config(background='green', command=self.animate_rocket_success)                      # set the button to green and have it call successful rocket animation
             else:
-                self.runSim_button.config(background='red',command=self.animate_rocket_fail)
-            self.animate_meteor_id = self.main_window.after(50, self.animate_meteor)
+                self.runSim_button.config(background='red',command=self.animate_rocket_fail)                            # otherwise the rocket will fail and the button should be red
+                                                                                                                        # the button turns gray on hover, this may be fixed with the 'state' of the button
+            self.animate_meteor_id = self.main_window.after(50, self.animate_meteor)                                    # keeping track of the ID allows for easy cancellation
         if cancel==True or self.meteor_x == self.earth_x:
             self.explosion_image = Image.open('explosion.png')
-            self.explosion_image = self.explosion_image.resize((self.meteor_w+40, self.meteor_h+40), Image.ANTIALIAS)
+            self.explosion_image = self.explosion_image.resize((self.meteor_w+40, self.meteor_h+40), Image.ANTIALIAS)   # explosion size is based on meteor size
             self.explosion_photo_image = ImageTk.PhotoImage(self.explosion_image)
             self.explosion_canvas_image = self.earth_canvas.create_image(int(self.meteor_x), int(self.meteor_y),
                                                                          image=self.explosion_photo_image)
             self.main_window.after_cancel(self.animate_meteor_id)
+            if self.meteor_x == self.earth_x:
+                tkinter.messagebox.showwarning("Failure", "Earth was impacted")
+            else:
+                tkinter.messagebox.showinfo("Success", "Meteor successfully destroyed!")
+            self.main_window.destroy()
+            self.__init__()
+
+
 
     def animate_rocket_fail(self, cancel=False):
         self.runSim_button.config(state='disabled')
-        self.rocket_h += 2
-        self.rocket_w += 2
-        self.rocket_x -= 5
-        self.rocket_y -= 5
+        self.rocket_h += self.rocket_dh
+        self.rocket_w += self.rocket_dw
+        self.rocket_x -= self.rocket_dx
+        self.rocket_y -= self.rocket_dy
         self.rocket_image = Image.open('rocket.png')
         self.rocket_image = self.rocket_image.resize((self.rocket_h, self.rocket_w), Image.ANTIALIAS)
         self.rocket_photo_image = ImageTk.PhotoImage(self.rocket_image)
@@ -168,13 +181,12 @@ class MeteorGUI:
         self.animate_rocket_fail_id =self.main_window.after(100, self.animate_rocket_fail)
 
     def animate_rocket_success(self, cancel=False):
-        if self.rocket_h == 10:
-            self.runSim_button.config(state='disabled')
-        if cancel==False:
-            #while abs(self.meteor_x - self.rocket_x) > 10 and abs(self.meteor_y - self.rocket_y) > 10:
-            self.rocket_h += 2
-            self.rocket_w += 2
-            if self.meteor_x > self.rocket_x:
+        if self.rocket_h == 10:                                                                                         # if the rocket has just spawned
+            self.runSim_button.config(state='disabled')                                                                 # disable the button
+        if cancel==False:                                                                                               # cancel should only be true if the rocket has impacted the meteor
+            self.rocket_h += self.rocket_dh
+            self.rocket_w += self.rocket_dw
+            if self.meteor_x > self.rocket_x:                                                                           # rocket follows meteor
                 self.rocket_x += self.rocket_dx
             elif self.meteor_x < self.rocket_x:
                 self.rocket_x -= self.rocket_dx
@@ -182,10 +194,10 @@ class MeteorGUI:
                 self.rocket_y += self.rocket_dy
             elif self.meteor_y < self.rocket_y:
                 self.rocket_y -= self.rocket_dy
-            if abs(self.meteor_x - self.rocket_x) < 20 and abs(self.meteor_y - self.rocket_y) < 20:
-                self.main_window.after_cancel(self.animate_rocket_success_id)
-                self.animate_meteor(True)
-                return                      # appears to be needed to cancel after loop
+            if abs(self.meteor_x - self.rocket_x) < self.rocket_e and abs(self.meteor_y - self.rocket_y) < self.rocket_e: # calculate distance using subtraction
+                self.main_window.after_cancel(self.animate_rocket_success_id)                                           # and check if it is less than the epsilon
+                self.animate_meteor(True)                                                                               # call animate meteor with cancel True
+                return                                                                                                  # appears to be needed to cancel after loop
             self.rocket_image = Image.open('rocket.png')
             self.rocket_image = self.rocket_image.resize((self.rocket_h, self.rocket_w), Image.ANTIALIAS)
             self.rocket_photo_image = ImageTk.PhotoImage(self.rocket_image)
@@ -195,19 +207,17 @@ class MeteorGUI:
 
     def draw_one_meteor_frame(self):
         self.meteor_image = Image.open('meteor.png')
-        #self.meteor_image = self.meteor_image.resize((self.meteor_h, self.meteor_w), Image.ANTIALIAS)
         self.meteor_image = self.meteor_image.resize((self.meteor_w, self.meteor_h), Image.ANTIALIAS)
         self.meteor_photo_image = ImageTk.PhotoImage(self.meteor_image)
         self.meteor_err = self.meteor_err + self.meteor_deltaerr
         self.meteor_canvas_image = self.earth_canvas.create_image(int(self.meteor_x), int(self.meteor_y),
                                                                   image=self.meteor_photo_image)
         self.meteor_x += self.meteor_dx
-        self.meteor_w = abs(self.earth_x - self.meteor_x)       # meteor_x gets closer to earth_x value as it approaches earth
-        self.meteor_h = abs(self.earth_x - self.meteor_x)       # therefore the meteor shrinks
+        self.meteor_w = abs(self.earth_x - self.meteor_x)                                                               # meteor_x gets closer to earth_x value as it approaches earth
+        self.meteor_h = abs(self.earth_x - self.meteor_x)                                                               # therefore this value approaches zero and the meteor shrinks
         if abs(self.meteor_err) >= 0.5:
             self.meteor_y += self.meteor_dy
-            # need to resize relative to earth's center
-            self.meteor_err -= self.meteor_drr
+            self.meteor_err -= self.meteor_derr
 
     # Retrieve the data from the text box and call the function in meteorCalc
     def processData(self):
@@ -217,7 +227,7 @@ class MeteorGUI:
         self.diam = int((self.diameter_entry.get()))
         self.meteorSpeed = float(120 * self.diam)
         self.meteor_y = randint(0,self.canvas_h)
-        self.meteor_x = math.floor(math.sqrt(abs(pow(self.canvas_h, 2) - pow(self.meteor_y, 2))))    # Pythagoras's Identity
+        self.meteor_x = math.floor(math.sqrt(abs(pow(self.canvas_h, 2) - pow(self.meteor_y, 2))))                       # Pythagoras's Identity
         self.distance_px = int(math.sqrt(pow(self.earth_x - self.meteor_x, 2) + pow(self.earth_y-self.meteor_y,2)))
         self.meteor_deltaerr = (self.earth_y-self.meteor_y)/(self.earth_x-self.meteor_x)
         self.runSim_button.config(state='normal', text='Launch', background='red', command=self.animate_rocket_fail)
@@ -227,7 +237,7 @@ class MeteorGUI:
         #    self.meteor_dx = 0
         if self.meteor_y > self.earth_y:
             self.meteor_dy = -self.meteor_dy
-            self.meteor_drr = -self.meteor_drr
+            self.meteor_derr = -self.meteor_derr
         #if self.meteor_y == self.earth_y:
         #    self.meteor_dy = 0
         if (self.meteor_x > self.canvas_w):
@@ -354,35 +364,35 @@ class MeteorGUI:
 
 
         # create widgets for the top frame, creating stringVars for text updates and output
-        status_window.distanceValue = tkinter.StringVar()
-        # convert distance to string and store it - page 546
-        status_window.distanceValue.set(distanceFloat)
+        #status_window.distanceValue = tkinter.StringVar()
+        ## convert distance to string and store it - page 546
+        #status_window.distanceValue.set(distanceFloat)
 
-        status_window.blank_label1 = tkinter.Label(status_window.top_frame, text=' ')
-        status_window.distance_label = tkinter.Label(status_window.top_frame, \
-                                                     text='Meteor Distance = {:d}' + format(distanceFloat))
-        status_window.distanceFloatValue = tkinter.Label(status_window.top_frame, \
-                                                         textvariable=status_window.distanceValue)  # page 546
+        #status_window.blank_label1 = tkinter.Label(status_window.top_frame, text=' ')
+        #status_window.distance_label = tkinter.Label(status_window.top_frame, \
+        #                                             text='Meteor Distance = {:d}' + format(distanceFloat))
+        #status_window.distanceFloatValue = tkinter.Label(status_window.top_frame, \
+        #                                                 textvariable=status_window.distanceValue)  # page 546
 
-        # pack (position and order) the top frame's widgets
-        status_window.blank_label1.pack(side='top')
-        status_window.distance_label.pack(side='left')
-        status_window.distanceFloatValue.pack(side='left')
+        ## pack (position and order) the top frame's widgets
+        #status_window.blank_label1.pack(side='top')
+        #status_window.distance_label.pack(side='left')
+        #status_window.distanceFloatValue.pack(side='left')
 
-        # create the button widget and label for the bottom frame
-        status_window.blank_labelb = tkinter.Label(status_window.bottom_frame, text=' ')
-        status_window.updateSim_button = tkinter.Button(status_window.bottom_frame, \
-                                                        text='Update Simulation', command=simUpdate(distance, diam))
+        ## create the button widget and label for the bottom frame
+        #status_window.blank_labelb = tkinter.Label(status_window.bottom_frame, text=' ')
+        #status_window.updateSim_button = tkinter.Button(status_window.bottom_frame, \
+        #                                                text='Update Simulation', command=simUpdate(distance, diam))
 
-        # pack the blank label and buttons in the bottom frame
-        status_window.blank_labelb.pack()
-        status_window.updateSim_button.pack()
+        ## pack the blank label and buttons in the bottom frame
+        #status_window.blank_labelb.pack()
+        #status_window.updateSim_button.pack()
 
-        # pack the frames
-        status_window.top_frame.pack()
-        status_window.bottom_frame.pack()
+        ## pack the frames
+        #status_window.top_frame.pack()
+        #status_window.bottom_frame.pack()
 
-        status_window.lift()  # make it on top
+        #status_window.lift()  # make it on top
         # tkinter.mainloop()
 
 
