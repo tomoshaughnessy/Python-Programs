@@ -32,6 +32,9 @@ class MeteorGUI:
         self.earth_canvas = tkinter.Canvas(self.main_window, width=self.canvas_w, height=self.canvas_h, bg="black")     # canvas for earth
         self.explosion_image = Image.open('explosion.png')                                                              # open file
         self.explosion_photo_image = ImageTk.PhotoImage(self.explosion_image)                                           # convert to PhotoImage for editing
+        self.galaxy_image = Image.open('galaxy.png')
+        self.galaxy_image = self.galaxy_image.resize((self.canvas_w,self.canvas_h), Image.ANTIALIAS)
+        self.galaxy_photo_image = ImageTk.PhotoImage(self.galaxy_image)
         self.earth_image = Image.open('earth.png')
         self.earth_photo_image = ImageTk.PhotoImage(self.earth_image)
         self.meteor_image = Image.open('meteor.png')
@@ -56,7 +59,7 @@ class MeteorGUI:
         self.rocket_e = 20                                                                                              # rocket epsilon (minimum distance from meteor)
 
         # self.blank_frame1 = tkinter.Frame(self.main_window)
-        self.diameter_frame = tkinter.Frame(self.main_window)
+        #self.diameter_frame = tkinter.Frame(self.main_window)
         # self.blank_frame2 = tkinter.Frame(self.main_window)
         self.distance_frame = tkinter.Frame(self.main_window)
         # self.blank_frame3 = tkinter.Frame(self.main_window)
@@ -75,12 +78,12 @@ class MeteorGUI:
 
 
         # the Enry widgets
-        self.diameter_label = tkinter.Label(self.diameter_frame, \
-                                            text='Enter the meteor diameter in meters:  ', font=("Helvetica", 10))
-        self.diameter_entry = tkinter.Entry(self.diameter_frame, width=20)
-        self.diameter_entry.insert(0, 3)
+        #self.diameter_label = tkinter.Label(self.diameter_frame, \
+                                            #text='Enter the meteor diameter in meters:  ', font=("Helvetica", 10))
+        #self.diameter_entry = tkinter.Entry(self.diameter_frame, width=20)
+        #self.diameter_entry.insert(0, 3)
 
-        self.distance_label = tkinter.Label(self.distance_frame)
+        self.distance_label = tkinter.Label(self.distance_frame, font=("Helvetica", 18))
 
         #self.distance_entry = tkinter.Entry(self.distance_frame, width=20)
         #self.distance_entry.insert(0, 300)
@@ -90,8 +93,8 @@ class MeteorGUI:
         self.heading_label.pack()
         # self.blank_label2.pack()
 
-        self.diameter_label.pack(side='left')
-        self.diameter_entry.pack(side='left')
+        #self.diameter_label.pack(side='left')
+        #self.diameter_entry.pack(side='left')
         # self.blank_label3.pack()
 
         self.distance_label.pack(side='left')
@@ -100,7 +103,7 @@ class MeteorGUI:
         # create the button widgets and label for the bottom frame
         # self.blank_label4 = tkinter.Label(self.bottom_frame, text=' ')
         self.runSim_button = tkinter.Button(self.bottom_frame, \
-                                            state='normal', text='Run Simulation', command=self.processData)
+                                            state='normal', text='Run Simulation', command=self.processData, height=10, width=20)
         # self.runSim_button = tkinter.Button(self.bottom_frame, \
         # text='Run Simulation', command=self.processData)
         # self.blank_label5 = tkinter.Label(self.bottom_frame, text=' ')
@@ -123,11 +126,12 @@ class MeteorGUI:
         self.top_frame.pack()
         self.heading_frame.pack()
         self.earth_canvas.pack()
+        self.galaxy_canvas_image = self.earth_canvas.create_image(self.earth_x,self.earth_y, image=self.galaxy_photo_image)
         self.earth_canvas_image = self.earth_canvas.create_image(self.earth_x, self.earth_y, image=self.earth_photo_image)
         self.meteor_canvas_image = self.earth_canvas.create_image(int(self.meteor_x), int(self.meteor_y),
                                                                   image=self.meteor_photo_image)
         # self.blank_frame1.pack()
-        self.diameter_frame.pack()
+        #self.diameter_frame.pack()
         # self.blank_frame2.pack()
         self.distance_frame.pack()
         # self.blank_frame3.pack()
@@ -137,18 +141,19 @@ class MeteorGUI:
 
     def animate_meteor(self, cancel=False):
         if cancel==False:
-            self.draw_one_meteor_frame()
-            self.distance = self.distance - (self.meteorSpeed / 60/10)
+            self.draw_one_meteor_frame()                                                                                                # should only be called abs(earth.x - meteor.x) times
+            #self.distance = self.distance - (self.meteorSpeed / 100)
+            self.distance = abs(self.earth_x - self.meteor_x)*10
             # based on the earth image, there are 20 px per mile
             # self.distance = 20 * (int(math.sqrt(pow(self.earth_x - self.meteor_x, 2) + pow(self.earth_y-self.meteor_y,2))))           # it is not reasonable to calculate distance based on meteor position
-            self.distance_label.config(text='Distance is now {:d}'.format(int(self.distance)))                                          # because the meteor shrinks creating an imaginary z-axis
+            self.distance_label.config(text='Distance is now {:d}'.format(int(self.distance), font=("Helvetica",20)))                                          # because the meteor shrinks creating an imaginary z-axis
                                                                                                                                         # it could be possible using law of cosines and width of meteor
 
 
-            if (int(self.distance) >= 1200 and int(self.distance) <= 1400):                                             # if the distance is within this given range
-                self.runSim_button.config(background='green', command=self.animate_rocket_success)                      # set the button to green and have it call successful rocket animation
+            if (int(self.distance) >= 1000 and int(self.distance) <= 1500):                                             # if the distance is within this given range
+                self.runSim_button.config(state='normal', background='green', command=self.animate_rocket_success)                      # set the button to green and have it call successful rocket animation
             else:
-                self.runSim_button.config(background='red',command=self.animate_rocket_fail)                            # otherwise the rocket will fail and the button should be red
+                self.runSim_button.config(state='normal', background='red',command=self.animate_rocket_fail)                            # otherwise the rocket will fail and the button should be red
                                                                                                                         # the button turns gray on hover, this may be fixed with the 'state' of the button
             self.animate_meteor_id = self.main_window.after(50, self.animate_meteor)                                    # keeping track of the ID allows for easy cancellation
         if cancel==True or self.meteor_x == self.earth_x:
@@ -224,8 +229,8 @@ class MeteorGUI:
         # have to calculate distance relative to Earth, add
         self.distance = 1500
         #self.distance = int((self.distance_entry.get())) + self.earth_x
-        self.diam = int((self.diameter_entry.get()))
-        self.meteorSpeed = float(120 * self.diam)
+        #self.diam = int((self.diameter_entry.get()))
+        #self.meteorSpeed = float(120 * self.diam)
         self.meteor_y = randint(0,self.canvas_h)
         self.meteor_x = math.floor(math.sqrt(abs(pow(self.canvas_h, 2) - pow(self.meteor_y, 2))))                       # Pythagoras's Identity
         self.distance_px = int(math.sqrt(pow(self.earth_x - self.meteor_x, 2) + pow(self.earth_y-self.meteor_y,2)))
@@ -250,7 +255,7 @@ class MeteorGUI:
             self.meteor_y = 0
         self.animate_meteor()
 
-        self.diam = (float(self.diam))
+        #self.diam = (float(self.diam))
         #distance = float(distance)
         # = randrange(800)
         # = int(math.sqrt(math.pow(int(distance*20),2)- math.pow(self.meteor_y, 2)))
@@ -258,12 +263,12 @@ class MeteorGUI:
         badDiam = False
         badDistance = False
 
-        self.diameter_notice_label = tkinter.Label(self.diameter_frame, \
-                                                   text='NOTICE Heding into ifs now and diam is: {:d}'.format(diam))
-        self.distance_notice_label = tkinter.Label(self.distance_frame, \
-                                                   text='NOTICE Heading into ifs now and distance is: {:d}'.format(
-                                                       self.distance))
-        self.diameter_notice_label.pack()
+        #self.diameter_notice_label = tkinter.Label(self.diameter_frame, \
+         #                                          text='NOTICE Heding into ifs now and diam is: {:d}'.format(diam))
+        #self.distance_notice_label = tkinter.Label(self.distance_frame, \
+        #                                           text='NOTICE Heading into ifs now and distance is: {:d}'.format(
+        #                                               self.distance))
+        #self.diameter_notice_label.pack()
         self.distance_notice_label.pack()
 
         # tkinter.messagebox.showinfo('NOTICE', 'Heading into ifs now and diam is: ' + str(diam))
@@ -272,8 +277,8 @@ class MeteorGUI:
         if meteorStemUtils.validInput(diam) == False:
             diam = '3'
             badDiam = True
-            self.badDiam_label = tkinter.Label(self.diameter_frame, \
-                                               text='Bad Input Provided badDiam now equals ' + str(badDiam))
+            #self.badDiam_label = tkinter.Label(self.diameter_frame, \
+            #                                   text='Bad Input Provided badDiam now equals ' + str(badDiam))
             self.badDiam_label.pack()
             # tkinter.messagebox.showinfo('Bad Input Provided ', 'badDiam now equals ' + str(badDiam))
 
@@ -284,7 +289,7 @@ class MeteorGUI:
         self.badDistance_label.pack()
         self.badDistance_label.config(text='TEST')  # this is how I'll update a label within a loop
         for i in range(math.ceil(distance * 60 / meteorSpeed)):
-            distance = distance - (meteorSpeed / 60/10)
+            distance = distance
             self.distance_label.config(text='Distance is now ' + str(distance))
             if (distance >= 1200 and distance <= 1400):
                 self.runSim_button.config(background='green')
@@ -315,7 +320,7 @@ class MeteorGUI:
         # iconify the main window
         # self.main_window.iconify()
 
-        meteorStemStatus.runSimulation(diam, distance, simRunning)
+        meteorStemStatus.runSimulation(distance, simRunning)
 
         # Enter the tkinter main loop
 
@@ -325,7 +330,7 @@ class MeteorGUI:
         if simRunning == False:
             self.main_window.deiconify()
 
-    def runSimulation(diam, distance, simRunning):
+    def runSimulation(distance, simRunning):
 
         simRunning = True  # to let main loop know to deiconify the entry window
 
@@ -403,7 +408,7 @@ class MeteorGUI:
 
     def simUpdate(distance, diam):
         distanceData = float(distance)
-        diamData = float(diam)
+        #diamData = float(diam)
         meteorSpeed = float(120 * diamData)
         # tkinter.messagebox.showinfo('In while loop now', 'The distance is ' + format(distanceData, '.2f'))
 
